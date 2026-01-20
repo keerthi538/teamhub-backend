@@ -25,18 +25,18 @@ interface CallbackQuery {
 export async function authRoutes(fastify: FastifyInstance) {
   fastify.get("/login", async (request, reply) => {
     try {
-      const { codeChallenge, codeVerifier } = generatePKCE();
+      // const { codeChallenge, codeVerifier } = generatePKCE();
 
       // Generate state for CSRF protection
       const state = crypto.randomBytes(32).toString("base64url");
 
       // Store code verifier in session/cookie for later verification
-      reply.setCookie(oauth.pkceVerifierCookieName, codeVerifier, {
-        httpOnly: true,
-        secure: env.isProduction,
-        sameSite: "lax",
-        maxAge: oauth.pkceVerifierMaxAge,
-      });
+      // reply.setCookie(oauth.pkceVerifierCookieName, codeVerifier, {
+      //   httpOnly: true,
+      //   secure: env.isProduction,
+      //   sameSite: "lax",
+      //   maxAge: oauth.pkceVerifierMaxAge,
+      // });
 
       // Store state in session/cookie for later verification
       reply.setCookie(oauth.stateCookieName, state, {
@@ -47,9 +47,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       });
 
       // Get redirect URI - use config or construct from request
-      const redirectUri =
-        oauth.redirectUri ||
-        `${request.protocol}://${request.hostname}/auth/callback`;
+      const redirectUri = oauth.redirectUri;
 
       // Build authorization URL with PKCE parameters
       const params = new URLSearchParams({
@@ -57,13 +55,13 @@ export async function authRoutes(fastify: FastifyInstance) {
         redirect_uri: redirectUri,
         response_type: "code",
         scope: oauth.scope,
-        code_challenge: codeChallenge,
-        code_challenge_method: "S256",
+        // code_challenge: codeChallenge,
+        // code_challenge_method: "S256",
         state,
       });
 
       const authorizationUrl = `${oauth.idpUrl}?${params.toString()}`;
-
+      console.log("Redirecting to IDP authorization URL:", authorizationUrl);
       return reply.redirect(authorizationUrl);
     } catch (error) {
       fastify.log.error(error);
@@ -76,6 +74,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     "/callback",
     async (request, reply) => {
       try {
+        console.log("Received OAuth2 callback with query:", request.query);
         const { code, state, error, error_description } = request.query;
 
         // Check for authorization errors from IDP
@@ -106,29 +105,28 @@ export async function authRoutes(fastify: FastifyInstance) {
           sameSite: "lax",
         });
 
-        // Get PKCE verifier from cookie
-        const codeVerifier = request.cookies[oauth.pkceVerifierCookieName];
-        if (!codeVerifier) {
-          reply.code(400);
-          return { error: "PKCE verifier not found. Session may have expired" };
-        }
+        // // Get PKCE verifier from cookie
+        // const codeVerifier = request.cookies[oauth.pkceVerifierCookieName];
+        // if (!codeVerifier) {
+        //   reply.code(400);
+        //   return { error: "PKCE verifier not found. Session may have expired" };
+        // }
 
-        // Clear the PKCE verifier cookie after use
-        reply.clearCookie(oauth.pkceVerifierCookieName, {
-          httpOnly: true,
-          secure: env.isProduction,
-          sameSite: "lax",
-        });
+        // // Clear the PKCE verifier cookie after use
+        // reply.clearCookie(oauth.pkceVerifierCookieName, {
+        //   httpOnly: true,
+        //   secure: env.isProduction,
+        //   sameSite: "lax",
+        // });
 
         // Get redirect URI - use config or construct from request
-        const redirectUri =
-          oauth.redirectUri ||
-          `${request.protocol}://${request.hostname}/auth/callback`;
+        const redirectUri = oauth.redirectUri;
 
         // Exchange authorization code for tokens from IDP
         const idpTokenResponse = await exchangeCodeForToken(
           code,
-          codeVerifier,
+          // codeVerifier, // TODO: Later enable PKCE
+          "",
           redirectUri,
         );
 
@@ -138,10 +136,13 @@ export async function authRoutes(fastify: FastifyInstance) {
           return { error: "ID token not provided by IDP" };
         }
 
-        const idTokenPayload = decodeIdToken(
-          fastify,
+        const idTokenPayload = await decodeIdToken(
           idpTokenResponse.id_token,
+          oauth.jwksUri, // Google's JWKS endpoint
+          oauth.clientId,
+          oauth.oauthIssuer,
         );
+        
         if (!idTokenPayload) {
           reply.code(401);
           return { error: "Invalid ID token" };
@@ -150,6 +151,16 @@ export async function authRoutes(fastify: FastifyInstance) {
         // Extract user info from ID token
         const userInfo = extractUserInfoFromIdToken(idTokenPayload);
 
+        if (!userInfo.emailVerified) {
+          reply.code(403);
+          return { error: "Email not verified by identity provider" };
+        }
+
+        if (!userInfo.email) {
+          reply.code(400);
+          return { error: "Email not provided in ID token" };
+        }
+
         // Create or fetch internal user
         const user = await prisma.user.upsert({
           where: { email: userInfo.email },
@@ -157,23 +168,29 @@ export async function authRoutes(fastify: FastifyInstance) {
             name: userInfo.name ?? "",
           },
           create: {
-            email: userInfo.email ?? "",
+            email: userInfo.email,
             name: userInfo.name ?? "",
           },
         });
 
+        const expiresIn = 20 * 60; // 20 min
+
         // Create our own JWT token
-        const jwtToken = createJWT(fastify, {
-          userId: user.id,
-          email: user.email,
-        });
+        const jwtToken = createJWT(
+          fastify,
+          {
+            userId: user.id,
+            email: user.email,
+          },
+          expiresIn,
+        );
 
         // Store our JWT token in secure cookie (not the IDP's token)
         reply.setCookie(oauth.tokenCookieName, jwtToken, {
           httpOnly: true,
           secure: env.isProduction,
           sameSite: "lax",
-          maxAge: 24 * 60 * 60, // 24 hours
+          maxAge: expiresIn, // 24 hours
         });
 
         // Redirect to dashboard or home page
@@ -198,7 +215,7 @@ async function exchangeCodeForToken(
     client_id: oauth.clientId,
     client_secret: oauth.clientSecret,
     redirect_uri: redirectUri,
-    code_verifier: codeVerifier,
+    // code_verifier: codeVerifier,
   });
 
   const response = await fetch(oauth.tokenUrl, {

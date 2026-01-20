@@ -29,6 +29,10 @@ export async function routes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.get("/", async (request, reply) => {
+    return { message: "Welcome to teamhub dashboard" };
+  });
+
   // Register module routes
   await fastify.register(authRoutes, { prefix: "/auth" });
   await fastify.register(usersRoutes, { prefix: "/users" });

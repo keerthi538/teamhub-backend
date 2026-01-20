@@ -1,5 +1,5 @@
-import type { FastifyInstance } from "fastify";
-import { decodeJWT } from "./jwt";
+import { jwtVerify } from "jose";
+import { getJWKSVerifier } from "../../config/jwks";
 
 export interface IDTokenPayload {
   sub: string; // Subject (user ID from IDP)
@@ -14,28 +14,39 @@ export interface IDTokenPayload {
 }
 
 /**
- * Decode and validate ID token from IDP
- * Note: In production, you should also verify the signature using the IDP's public key
+ * Decode and validate ID token from IDP using JWKS
  */
-export function decodeIdToken(
-  fastify: FastifyInstance,
+export async function decodeIdToken(
   idToken: string,
-): IDTokenPayload | null {
+  jwksUri: string,
+  expectedAudience: string,
+  expectedIssuer: string,
+): Promise<IDTokenPayload | null> {
   try {
-    // For now, just decode without verification
-    // In production, use the IDP's JWKS endpoint to verify the signature
-    const decoded = decodeJWT(fastify, idToken) as IDTokenPayload | null;
+    console.log("Decoding and verifying ID Token");
 
-    if (!decoded || !decoded.sub || !decoded.email) {
+    const jwks = getJWKSVerifier(jwksUri);
+
+    // Verify and decode the token
+    const verified = await jwtVerify(idToken, jwks, {
+      audience: expectedAudience,
+      issuer: expectedIssuer,
+    });
+
+    const payload = verified.payload as IDTokenPayload;
+    console.log("ID Token verified successfully:", payload);
+
+    if (!payload.sub || !payload.email || typeof payload.email !== "string") {
+      console.error("ID token missing required claims");
       return null;
     }
 
-    return decoded;
+    return payload;
   } catch (error) {
+    console.error("Error verifying ID token:", error);
     return null;
   }
 }
-
 /**
  * Extract user info from ID token claims
  */

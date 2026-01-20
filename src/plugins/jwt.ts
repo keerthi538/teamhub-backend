@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import jwt from "@fastify/jwt";
+import fp from "fastify-plugin";
 
-export async function jwtPlugin(fastify: FastifyInstance) {
+async function jwtPlugin(fastify: FastifyInstance) {
   const secret =
     process.env.JWT_SECRET || "your-secret-key-change-in-production";
 
@@ -9,3 +10,7 @@ export async function jwtPlugin(fastify: FastifyInstance) {
     secret,
   });
 }
+
+export default fp(jwtPlugin, {
+  name: "jwt-plugin",
+});

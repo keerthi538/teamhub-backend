@@ -14,7 +14,7 @@ export interface JWTPayload {
 export function createJWT(
   fastify: FastifyInstance,
   payload: JWTPayload,
-  expiresIn: string = "24h",
+  expiresIn: string | number = "24h",
 ): string {
   return fastify.jwt.sign(payload, { expiresIn });
 }
