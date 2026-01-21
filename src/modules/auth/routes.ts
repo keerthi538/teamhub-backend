@@ -142,7 +142,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           oauth.clientId,
           oauth.oauthIssuer,
         );
-        
+
         if (!idTokenPayload) {
           reply.code(401);
           return { error: "Invalid ID token" };
