@@ -23,8 +23,6 @@ export async function decodeIdToken(
   expectedIssuer: string,
 ): Promise<IDTokenPayload | null> {
   try {
-    console.log("Decoding and verifying ID Token");
-
     const jwks = getJWKSVerifier(jwksUri);
 
     // Verify and decode the token
@@ -34,8 +32,6 @@ export async function decodeIdToken(
     });
 
     const payload = verified.payload as IDTokenPayload;
-    console.log("ID Token verified successfully:", payload);
-
     if (!payload.sub || !payload.email || typeof payload.email !== "string") {
       console.error("ID token missing required claims");
       return null;

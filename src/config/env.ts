@@ -14,4 +14,5 @@ export const env = {
   googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || "",
   googleAuthScopes: process.env.GOOGLE_AUTH_SCOPES || "openid profile email",
   googleJwksUri: process.env.GOOGLE_JWKS_URI || "",
+  frontendUrl: process.env.FRONTEND_URL || "",
 };

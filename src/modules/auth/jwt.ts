@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import jwt from "@fastify/jwt";
 
 export interface JWTPayload {
-  userId: number;
+  id: number;
   email: string;
   iat?: number;
   exp?: number;

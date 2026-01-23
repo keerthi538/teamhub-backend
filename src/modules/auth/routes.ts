@@ -61,7 +61,6 @@ export async function authRoutes(fastify: FastifyInstance) {
       });
 
       const authorizationUrl = `${oauth.idpUrl}?${params.toString()}`;
-      console.log("Redirecting to IDP authorization URL:", authorizationUrl);
       return reply.redirect(authorizationUrl);
     } catch (error) {
       fastify.log.error(error);
@@ -74,7 +73,6 @@ export async function authRoutes(fastify: FastifyInstance) {
     "/callback",
     async (request, reply) => {
       try {
-        console.log("Received OAuth2 callback with query:", request.query);
         const { code, state, error, error_description } = request.query;
 
         // Check for authorization errors from IDP
@@ -179,7 +177,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         const jwtToken = createJWT(
           fastify,
           {
-            userId: user.id,
+            id: user.id,
             email: user.email,
           },
           expiresIn,
@@ -191,10 +189,11 @@ export async function authRoutes(fastify: FastifyInstance) {
           secure: env.isProduction,
           sameSite: "lax",
           maxAge: expiresIn, // 24 hours
+          path: "/",
         });
 
         // Redirect to dashboard or home page
-        return reply.redirect("/");
+        return reply.redirect(env.frontendUrl);
       } catch (error) {
         fastify.log.error(error);
         reply.code(500);
