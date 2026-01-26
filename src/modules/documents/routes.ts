@@ -31,4 +31,51 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  fastify.get<{ Params: { id: string } }>(
+    "/:id",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      try {
+        const document = await prisma.document.findUnique({
+          where: { id: Number(id) },
+        });
+
+        if (!document) {
+          reply.code(404);
+          return { error: "Document not found" };
+        }
+
+        return document;
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return { error: "Failed to retrieve document" };
+      }
+    },
+  );
+
+  fastify.put<{
+    Params: { id: string };
+    Body: { title?: string; content?: string };
+  }>("/:id", { preHandler: fastify.authenticate }, async (request, reply) => {
+    const { id } = request.params;
+    const { title, content } = request.body;
+
+    try {
+      const updatedDocument = await prisma.document.update({
+        where: { id: Number(id) },
+        data: { title: title ?? "Untitled", content: content ?? "" },
+      });
+
+      return updatedDocument;
+    } catch (error) {
+      fastify.log.error(error);
+      reply.code(500);
+
+      return { error: "Failed to update document" };
+    }
+  });
 }

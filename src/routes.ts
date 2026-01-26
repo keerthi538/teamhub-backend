@@ -3,7 +3,7 @@ import { prisma } from "./plugins/prisma";
 import { authRoutes } from "./modules/auth";
 import { usersRoutes } from "./modules/users";
 import { teamsRoutes } from "./modules/teams";
-import { documentsRoutes } from "./modules/documents/routes";
+import { documentsRoutes } from "./modules/documents";
 
 export async function routes(fastify: FastifyInstance) {
   // GET /ping - Simple ping endpoint
