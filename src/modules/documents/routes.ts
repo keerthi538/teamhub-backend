@@ -78,4 +78,28 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       return { error: "Failed to update document" };
     }
   });
+
+  fastify.get<{ Reply: unknown }>(
+    "/",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      const currentTeamId = request.user?.currentTeamId;
+
+      if (!currentTeamId) {
+        reply.code(400);
+        return { error: "User has no current team selected" };
+      }
+
+      try {
+        const documents = await prisma.document.findMany({
+          where: { teamId: currentTeamId },
+        });
+        return documents;
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return { error: "Failed to fetch documents" };
+      }
+    },
+  );
 }

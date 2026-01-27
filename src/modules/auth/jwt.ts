@@ -4,6 +4,7 @@ import jwt from "@fastify/jwt";
 export interface JWTPayload {
   id: number;
   email: string;
+  currentTeamId?: number | null;
   iat?: number;
   exp?: number;
 }

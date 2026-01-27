@@ -179,6 +179,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           {
             id: user.id,
             email: user.email,
+            currentTeamId: user.currentTeamId,
           },
           expiresIn,
         );

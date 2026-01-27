@@ -21,6 +21,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
               },
             },
             documents: true,
+            currentTeam: true,
           },
         });
 
