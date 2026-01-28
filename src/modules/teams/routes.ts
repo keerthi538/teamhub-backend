@@ -114,4 +114,99 @@ export async function teamsRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  fastify.get<{ Reply: unknown }>(
+    "/members",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      if (!request.user?.id) {
+        reply.code(401);
+        return { error: "Unauthorized" };
+      }
+
+      const currentTeamId = request.user.currentTeamId;
+      if (!currentTeamId) {
+        reply.code(400);
+        return { error: "No current team selected" };
+      }
+
+      try {
+        const memberships = await prisma.membership.findMany({
+          where: { teamId: currentTeamId },
+          include: { user: { select: { id: true, name: true, email: true } } },
+        });
+
+        return memberships.map((membership) => ({
+          id: membership.user.id,
+          name: membership.user.name,
+          email: membership.user.email,
+          role: membership.role,
+        }));
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return { error: "Failed to fetch team members" };
+      }
+    },
+  );
+
+  fastify.post<{ Body: { email: string } }>(
+    "/members/add",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      if (!request.user?.id) {
+        reply.code(401);
+        return { error: "Unauthorized" };
+      }
+
+      const currentTeamId = request.user.currentTeamId;
+      if (!currentTeamId) {
+        reply.code(400);
+        return { error: "No current team selected" };
+      }
+
+      const { email } = request.body;
+      try {
+        const userToAdd = await prisma.user.findUnique({
+          where: { email: email },
+        });
+
+        if (!userToAdd) {
+          reply.code(404);
+          return { error: "User not found" };
+        }
+
+        const existingMembership = await prisma.membership.findFirst({
+          where: {
+            userId: userToAdd.id,
+            teamId: currentTeamId,
+          },
+        });
+
+        if (existingMembership) {
+          reply.code(400);
+          return { error: "User is already a member of the team" };
+        }
+
+        await prisma.membership.create({
+          data: {
+            userId: userToAdd.id,
+            teamId: currentTeamId,
+            role: Role.MEMBER,
+          },
+        });
+
+        return {
+          id: userToAdd.id,
+          name: userToAdd.name,
+          email: userToAdd.email,
+          role: Role.MEMBER,
+        };
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return { error: "Failed to add user to the team" };
+      }
+    },
+  );
 }
