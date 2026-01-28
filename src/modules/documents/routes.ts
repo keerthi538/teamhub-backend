@@ -93,6 +93,12 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       try {
         const documents = await prisma.document.findMany({
           where: { teamId: currentTeamId },
+          select: {
+            id: true,
+            title: true,
+            teamId: true,
+            author: { select: { name: true } },
+          },
         });
         return documents;
       } catch (error) {
