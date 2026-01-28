@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { prisma } from "../../plugins/prisma";
 import { Role } from "../../../generated/prisma/enums";
+import { env } from "../../config/env";
+import { oauth } from "../../config/oauth";
 
 export async function teamsRoutes(fastify: FastifyInstance) {
   fastify.get<{ Reply: unknown }>(
@@ -104,6 +106,19 @@ export async function teamsRoutes(fastify: FastifyInstance) {
           include: {
             currentTeam: true,
           },
+        });
+
+        const newToken = await reply.jwtSign({
+          id: request.user.id,
+          email: request.user.email,
+          currentTeamId: Number(teamId),
+        });
+
+        reply.setCookie(oauth.tokenCookieName, newToken, {
+          httpOnly: true,
+          secure: env.isProduction,
+          sameSite: "lax",
+          path: "/", // important
         });
 
         return { message: `Switched to team ${teamId}` };

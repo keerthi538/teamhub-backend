@@ -23,6 +23,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
             author: { select: { name: true } },
           },
         });
+
         return documents;
       } catch (error) {
         fastify.log.error(error);

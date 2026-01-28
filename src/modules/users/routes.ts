@@ -36,6 +36,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
           name: user.name,
           memberships: user.memberships,
           documents: user.documents,
+          currentTeam: user.currentTeam,
         };
       } catch (error) {
         fastify.log.error(error);
