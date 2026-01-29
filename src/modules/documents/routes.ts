@@ -20,11 +20,21 @@ export async function documentsRoutes(fastify: FastifyInstance) {
             id: true,
             title: true,
             teamId: true,
+            published: true,
             author: { select: { name: true } },
           },
         });
 
-        return documents;
+        return documents.map((doc) => ({
+          id: doc.id,
+          name: doc.title,
+          teamId: doc.teamId,
+          author: {
+            name: doc.author.name,
+          },
+          lastEdited: null,
+          status: doc.published ? "PUBLISHED" : "DRAFT",
+        }));
       } catch (error) {
         fastify.log.error(error);
         reply.code(500);
