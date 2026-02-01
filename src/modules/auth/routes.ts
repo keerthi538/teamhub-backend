@@ -188,7 +188,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         reply.setCookie(oauth.tokenCookieName, jwtToken, {
           httpOnly: true,
           secure: env.isProduction,
-          sameSite: "lax",
+          sameSite: "none",
           maxAge: expiresIn, // 24 hours
           path: "/",
         });
