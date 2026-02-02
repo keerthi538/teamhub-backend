@@ -3,6 +3,7 @@ import { prisma } from "../../plugins/prisma";
 import { Role } from "../../../generated/prisma/enums";
 import { env } from "../../config/env";
 import { oauth } from "../../config/oauth";
+import { isValidTeamRole } from "../../utils";
 
 export async function teamsRoutes(fastify: FastifyInstance) {
   fastify.get<{ Reply: unknown }>(
@@ -165,7 +166,7 @@ export async function teamsRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Body: { email: string } }>(
+  fastify.post<{ Body: { email: string; role: string } }>(
     "/members/add",
     { preHandler: fastify.authenticate },
     async (request, reply) => {
@@ -180,7 +181,7 @@ export async function teamsRoutes(fastify: FastifyInstance) {
         return { error: "No current team selected" };
       }
 
-      const { email } = request.body;
+      const { email, role } = request.body;
       try {
         const userToAdd = await prisma.user.findUnique({
           where: { email: email },
@@ -189,6 +190,11 @@ export async function teamsRoutes(fastify: FastifyInstance) {
         if (!userToAdd) {
           reply.code(404);
           return { error: "User not found" };
+        }
+
+        if (!isValidTeamRole(role)) {
+          reply.code(404);
+          return { error: "Invalid role" };
         }
 
         const existingMembership = await prisma.membership.findFirst({
@@ -207,7 +213,7 @@ export async function teamsRoutes(fastify: FastifyInstance) {
           data: {
             userId: userToAdd.id,
             teamId: currentTeamId,
-            role: Role.MEMBER,
+            role: role,
           },
         });
 
@@ -215,7 +221,7 @@ export async function teamsRoutes(fastify: FastifyInstance) {
           id: userToAdd.id,
           name: userToAdd.name,
           email: userToAdd.email,
-          role: Role.MEMBER,
+          role: role,
         };
       } catch (error) {
         fastify.log.error(error);
