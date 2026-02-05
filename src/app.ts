@@ -7,11 +7,14 @@ import jwksPlugin from "./plugins/jwks";
 import { env } from "./config/env";
 import authPlugin from "./plugins/auth";
 import corsPlugin from "./plugins/cors";
+import websocket from "@fastify/websocket";
 
 export async function createApp() {
   const fastify = Fastify({
     logger: true,
   });
+
+  await fastify.register(websocket);
 
   // Register cookie plugin
   await fastify.register(cookie, {
