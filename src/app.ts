@@ -12,6 +12,7 @@ import websocket from "@fastify/websocket";
 export async function createApp() {
   const fastify = Fastify({
     logger: true,
+    ignoreTrailingSlash: true,
   });
 
   await fastify.register(websocket);
