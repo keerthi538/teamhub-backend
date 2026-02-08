@@ -1,5 +1,6 @@
 import fastify, { type FastifyInstance } from "fastify";
 import { prisma } from "../../plugins/prisma";
+import * as Y from "yjs";
 
 export async function documentsRoutes(fastify: FastifyInstance) {
   fastify.get<{ Reply: unknown }>(
@@ -18,6 +19,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           where: { teamId: currentTeamId },
           select: {
             id: true,
+            uuid: true,
             title: true,
             teamId: true,
             published: true,
@@ -27,6 +29,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
 
         return documents.map((doc) => ({
           id: doc.id,
+          uuid: doc.uuid,
           name: doc.title,
           teamId: doc.teamId,
           author: {
@@ -55,12 +58,27 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       try {
         const { teamId } = request.body;
 
+        // Empty yjs state for collaboration
+        const ydoc = new Y.Doc();
+        const emptyState = Y.encodeStateAsUpdate(ydoc);
+
         const document = await prisma.document.create({
           data: {
             title: "New Document",
             content: "",
+            yjsState: Buffer.from(emptyState),
             authorId: request.user.id,
             teamId: teamId,
+          },
+
+          select: {
+            id: true,
+            uuid: true, // For collaboration
+            title: true,
+            content: true,
+            published: true,
+            authorId: true,
+            teamId: true,
           },
         });
 
@@ -81,7 +99,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
 
       try {
         const document = await prisma.document.findUnique({
-          where: { id: Number(id) },
+          where: { uuid: id },
         });
 
         if (!document) {

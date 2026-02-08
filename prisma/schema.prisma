@@ -54,6 +54,7 @@ model Membership {
 
 model Document {
   id        Int     @id @default(autoincrement())
+  uuid      String  @unique @default(uuid())  // UUID for collaboration
   title     String
   content   String?
   yjsState  Bytes?   // Yjs collaborative state
