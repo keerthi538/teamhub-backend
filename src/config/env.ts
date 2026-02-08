@@ -15,4 +15,5 @@ export const env = {
   googleAuthScopes: process.env.GOOGLE_AUTH_SCOPES || "openid profile email",
   googleJwksUri: process.env.GOOGLE_JWKS_URI || "",
   frontendUrl: process.env.FRONTEND_URL || "",
+  jwtSecret: process.env.JWT_SECRET || "some-secret",
 };

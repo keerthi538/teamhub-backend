@@ -3,9 +3,15 @@ import "@fastify/jwt";
 declare module "@fastify/jwt" {
   interface FastifyJWT {
     payload: {
-      id: number;
-      email: string;
+      // Required for auth tokens
+      id?: number;
+      email?: string;
       currentTeamId?: number | null;
+
+      // Required for collaboration tokens
+      documentUuid?: string;
+      userId?: number;
+      teamId?: number;
     };
     user: {
       id: number;

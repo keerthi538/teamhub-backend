@@ -137,4 +137,60 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       return { error: "Failed to update document" };
     }
   });
+
+  // Generate collaboration token for a document
+  fastify.get<{
+    Params: { uuid: string };
+  }>(
+    "/:uuid/token",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      if (!request.user?.id) {
+        reply.code(401);
+        return { error: "Unauthorized" };
+      }
+
+      try {
+        const { uuid } = request.params;
+
+        // Verify user has access to this document
+        const document = await prisma.document.findFirst({
+          where: {
+            uuid,
+            OR: [
+              { authorId: request.user.id }, // Is author
+              {
+                team: {
+                  memberships: {
+                    some: { userId: request.user.id },
+                  },
+                },
+              }, // Is team member
+            ],
+          },
+        });
+
+        if (!document) {
+          reply.code(403);
+          return { error: "Access denied" };
+        }
+
+        // Generate JWT token for Hocuspocus
+        const token = fastify.jwt.sign(
+          {
+            documentUuid: uuid,
+            userId: request.user.id,
+            teamId: document.teamId,
+          },
+          { expiresIn: "2h" },
+        );
+
+        return { token };
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return { error: "Failed to generate token" };
+      }
+    },
+  );
 }
