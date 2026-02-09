@@ -138,6 +138,65 @@ export async function documentsRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.patch<{
+    Params: { uuid: string };
+    Body: { title: string };
+  }>(
+    "/:uuid/title",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      if (!request.user?.id) {
+        return reply.code(401).send({ error: "Unauthorized" });
+      }
+
+      try {
+        const { uuid } = request.params;
+        const { title } = request.body;
+
+        // Verify user has access to this document
+        const document = await prisma.document.findFirst({
+          where: {
+            uuid,
+            OR: [
+              { authorId: request.user.id },
+              {
+                team: {
+                  memberships: {
+                    some: { userId: request.user.id },
+                  },
+                },
+              },
+            ],
+          },
+        });
+
+        if (!document) {
+          return reply.code(403).send({ error: "Access denied" });
+        }
+
+        // Update the title
+        const updatedDocument = await prisma.document.update({
+          where: { uuid },
+          data: {
+            title: title.trim() || "Untitled document",
+          },
+          select: {
+            uuid: true,
+            title: true,
+          },
+        });
+
+        return {
+          success: true,
+          title: updatedDocument.title,
+        };
+      } catch (error) {
+        fastify.log.error(error);
+        return reply.code(500).send({ error: "Failed to update title" });
+      }
+    },
+  );
+
   // Generate collaboration token for a document
   fastify.get<{
     Params: { uuid: string };
