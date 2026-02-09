@@ -153,6 +153,18 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       try {
         const { uuid } = request.params;
 
+        const user = await prisma.user.findUnique({
+          where: { id: request.user.id },
+          select: {
+            name: true,
+            profileColor: true,
+          },
+        });
+
+        if (!user) {
+          return reply.code(404).send({ error: "User not found" });
+        }
+
         // Verify user has access to this document
         const document = await prisma.document.findFirst({
           where: {
@@ -182,6 +194,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
             userId: request.user.id,
             teamId: document.teamId,
             name: request.user.name,
+            color: user.profileColor ?? "#3b82f6",
           },
           { expiresIn: "2h" },
         );
@@ -191,6 +204,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           user: {
             id: request.user.id,
             name: request.user.name,
+            color: user.profileColor || "#3b82f6",
           },
         };
       } catch (error) {

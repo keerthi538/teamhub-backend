@@ -13,6 +13,7 @@ declare module "@fastify/jwt" {
       documentUuid?: string;
       userId?: number;
       teamId?: number;
+      color?: string;
     };
     user: {
       id: number;
