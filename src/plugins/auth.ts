@@ -7,12 +7,14 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
       const decoded = await request.jwtVerify<{
         id: number;
         email: string;
+        name: string;
         currentTeamId: number | null;
       }>();
 
       request.user = {
         id: decoded.id,
         email: decoded.email,
+        name: decoded.name,
         currentTeamId: decoded.currentTeamId,
       };
     } catch (err) {

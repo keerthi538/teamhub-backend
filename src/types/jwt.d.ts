@@ -7,6 +7,7 @@ declare module "@fastify/jwt" {
       id?: number;
       email?: string;
       currentTeamId?: number | null;
+      name?: string | null;
 
       // Required for collaboration tokens
       documentUuid?: string;
@@ -16,6 +17,7 @@ declare module "@fastify/jwt" {
     user: {
       id: number;
       email: string;
+      name: string;
       currentTeamId?: number | null;
     };
   }

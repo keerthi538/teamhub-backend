@@ -181,11 +181,18 @@ export async function documentsRoutes(fastify: FastifyInstance) {
             documentUuid: uuid,
             userId: request.user.id,
             teamId: document.teamId,
+            name: request.user.name,
           },
           { expiresIn: "2h" },
         );
 
-        return { token };
+        return {
+          token,
+          user: {
+            id: request.user.id,
+            name: request.user.name,
+          },
+        };
       } catch (error) {
         fastify.log.error(error);
         reply.code(500);

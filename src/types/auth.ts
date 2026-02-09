@@ -1,6 +1,7 @@
 export interface AuthUser {
   id: number;
   email: string;
+  name?: string;
   currentTeamId?: number | null;
 }
 

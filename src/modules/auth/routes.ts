@@ -163,11 +163,11 @@ export async function authRoutes(fastify: FastifyInstance) {
         const user = await prisma.user.upsert({
           where: { email: userInfo.email },
           update: {
-            name: userInfo.name ?? "",
+            name: userInfo?.name ?? "",
           },
           create: {
-            email: userInfo.email,
-            name: userInfo.name ?? "",
+            email: userInfo?.email,
+            name: userInfo?.name ?? "",
           },
         });
 
@@ -180,6 +180,7 @@ export async function authRoutes(fastify: FastifyInstance) {
             id: user.id,
             email: user.email,
             currentTeamId: user.currentTeamId,
+            name: userInfo?.name ?? "Unknown user",
           },
           expiresIn,
         );
