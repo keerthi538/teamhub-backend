@@ -252,7 +252,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
             documentUuid: uuid,
             userId: request.user.id,
             teamId: document.teamId,
-            name: request.user.name,
+            name: user.name,
             color: user.profileColor ?? "#3b82f6",
           },
           { expiresIn: "2h" },
@@ -262,7 +262,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           token,
           user: {
             id: request.user.id,
-            name: request.user.name,
+            name: user.name,
             color: user.profileColor || "#3b82f6",
           },
         };
