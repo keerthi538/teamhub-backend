@@ -1,4 +1,4 @@
-import { jwtVerify } from "jose";
+import { jwtVerify, type JWTPayload as JoseJWTPayload } from "jose";
 import { getJWKSVerifier } from "../../config/jwks";
 
 export interface IDTokenPayload {
@@ -11,6 +11,14 @@ export interface IDTokenPayload {
   exp?: number;
   aud?: string;
   iss?: string;
+}
+
+export interface IDTokenPayload extends JoseJWTPayload {
+  sub: string;
+  email: string;
+  email_verified?: boolean;
+  name?: string;
+  picture?: string;
 }
 
 /**
