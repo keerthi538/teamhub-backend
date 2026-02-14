@@ -2,10 +2,10 @@ import type { FastifyInstance } from "fastify";
 import jwt from "@fastify/jwt";
 import fp from "fastify-plugin";
 import { oauth } from "../config/oauth";
+import { env } from "../config/env";
 
 async function jwtPlugin(fastify: FastifyInstance) {
-  const secret =
-    process.env.JWT_SECRET || "your-secret-key-change-in-production";
+  const secret = env.jwtSecret ?? "secret-key";
 
   await fastify.register(jwt, {
     secret,
