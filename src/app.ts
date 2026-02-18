@@ -1,6 +1,5 @@
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
-import cors from "@fastify/cors";
 import { routes } from "./routes";
 import jwtPlugin from "./plugins/jwt";
 import jwksPlugin from "./plugins/jwks";
