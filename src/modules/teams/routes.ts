@@ -67,6 +67,19 @@ export async function teamsRoutes(fastify: FastifyInstance) {
           data: { currentTeamId: newTeam.id },
         });
 
+        const newToken = await reply.jwtSign({
+          id: request.user.id,
+          email: request.user.email,
+          currentTeamId: Number(newTeam.id),
+        });
+
+        reply.setCookie(oauth.tokenCookieName, newToken, {
+          httpOnly: true,
+          secure: env.isProduction,
+          sameSite: "lax",
+          path: "/", // important
+        });
+
         return newTeam;
       } catch (error) {
         fastify.log.error(error);
