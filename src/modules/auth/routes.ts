@@ -203,6 +203,16 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  fastify.get("/logout", async (request, reply) => {
+    reply.clearCookie(oauth.tokenCookieName, {
+      httpOnly: true,
+      secure: env.isProduction,
+      sameSite: "lax",
+      path: "/",
+    });
+    return reply.redirect(env.frontendUrl);
+  });
 }
 
 async function exchangeCodeForToken(
