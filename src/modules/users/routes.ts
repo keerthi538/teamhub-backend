@@ -37,11 +37,43 @@ export async function usersRoutes(fastify: FastifyInstance) {
           memberships: user.memberships,
           documents: user.documents,
           currentTeam: user.currentTeam,
+          profileColor: user.profileColor,
         };
       } catch (error) {
         fastify.log.error(error);
         reply.code(500);
         return { error: "Failed to fetch user" };
+      }
+    },
+  );
+
+  fastify.patch<{ Body: { profileColor?: string } }>(
+    "/profile-color",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      if (!request.user?.id) {
+        reply.code(401);
+        return { error: "Unauthorized" };
+      }
+
+      const { profileColor } = request.body;
+
+      try {
+        const updatedUser = await prisma.user.update({
+          where: { id: request.user.id },
+          data: { profileColor },
+        });
+
+        return {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          profileColor: updatedUser.profileColor,
+        };
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return { error: "Failed to update user" };
       }
     },
   );
