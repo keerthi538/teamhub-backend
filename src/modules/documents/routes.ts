@@ -15,14 +15,22 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       }
 
       try {
+        // Note: Users can see documents they authored or published documents from their team, but not unpublished documents from other authors in the team
         const documents = await prisma.document.findMany({
-          where: { teamId: currentTeamId },
+          where: {
+            teamId: currentTeamId,
+            OR: [
+              { authorId: request.user?.id }, // Is author
+              { published: true }, // Is published
+            ],
+          },
           select: {
             id: true,
             uuid: true,
             title: true,
             teamId: true,
             published: true,
+            updatedAt: true,
             author: { select: { name: true } },
           },
         });
@@ -35,7 +43,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           author: {
             name: doc.author.name,
           },
-          lastEdited: null,
+          lastEdited: doc.updatedAt,
           status: doc.published ? "PUBLISHED" : "DRAFT",
         }));
       } catch (error) {
@@ -270,6 +278,55 @@ export async function documentsRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         reply.code(500);
         return { error: "Failed to generate token" };
+      }
+    },
+  );
+
+  fastify.patch<{ Params: { uuid: string } }>(
+    "/:uuid/publish",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      if (!request.user?.id) {
+        reply.code(401);
+        return { error: "Unauthorized" };
+      }
+
+      try {
+        const { uuid } = request.params;
+
+        // Verify user is the author of this document
+        const document = await prisma.document.findFirst({
+          where: {
+            uuid,
+            authorId: request.user.id,
+          },
+        });
+
+        if (!document) {
+          reply.code(403);
+          return { error: "Access denied" };
+        }
+
+        // Toggle published status
+        const updatedDocument = await prisma.document.update({
+          where: { uuid },
+          data: {
+            published: !document.published,
+          },
+          select: {
+            uuid: true,
+            published: true,
+          },
+        });
+
+        return {
+          success: true,
+          published: updatedDocument.published,
+        };
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return { error: "Failed to update publish status" };
       }
     },
   );
