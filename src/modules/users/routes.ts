@@ -20,7 +20,6 @@ export async function usersRoutes(fastify: FastifyInstance) {
                 team: true,
               },
             },
-            documents: true,
             currentTeam: true,
           },
         });
@@ -35,9 +34,11 @@ export async function usersRoutes(fastify: FastifyInstance) {
           email: user.email,
           name: user.name,
           memberships: user.memberships,
-          documents: user.documents,
           currentTeam: user.currentTeam,
           profileColor: user.profileColor,
+          currentTeamRole:
+            user.memberships.find((m) => m.teamId === user.currentTeamId)
+              ?.role || "member",
         };
       } catch (error) {
         fastify.log.error(error);
