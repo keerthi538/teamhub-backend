@@ -6,6 +6,11 @@ import { createJWT } from "./jwt";
 import { decodeIdToken, extractUserInfoFromIdToken } from "./idtoken";
 import { prisma } from "../../plugins/prisma";
 import crypto from "crypto";
+import {
+  hashPassword,
+  verifyPassword,
+  validatePasswordStrength,
+} from "../../utils/password";
 
 interface TokenResponse {
   access_token: string;
@@ -20,6 +25,24 @@ interface CallbackQuery {
   state: string;
   error?: string;
   error_description?: string;
+}
+
+interface SignupRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+interface SigninRequest {
+  email: string;
+  password: string;
+}
+
+interface AuthResponse {
+  id: number;
+  email: string;
+  name: string | null;
+  currentTeamId: number | null;
 }
 
 export async function authRoutes(fastify: FastifyInstance) {
@@ -190,7 +213,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           httpOnly: true,
           secure: env.isProduction,
           sameSite: "lax",
-          maxAge: expiresIn, // 24 hours
+          maxAge: expiresIn,
           path: "/",
         });
 
@@ -212,6 +235,174 @@ export async function authRoutes(fastify: FastifyInstance) {
       path: "/",
     });
     return reply.redirect(env.frontendUrl);
+  });
+
+  fastify.post<{ Body: SignupRequest }>("/signup", async (request, reply) => {
+    try {
+      const { name, email, password } = request.body;
+
+      // Validate required fields
+      if (!name || !email || !password) {
+        reply.code(400);
+        return { error: "Missing required fields: name, email, password" };
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        reply.code(400);
+        return { error: "Invalid email format" };
+      }
+
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(password);
+      if (!passwordValidation.valid) {
+        reply.code(400);
+        return {
+          error: "Password does not meet requirements",
+          details: passwordValidation.errors,
+        };
+      }
+
+      // Check if email already exists with a password
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser && existingUser.password) {
+        // Email already exists with password auth
+        reply.code(409);
+        return {
+          error:
+            "This email is already registered. Please sign in with your password or use a different email.",
+        };
+      }
+
+      // Hash the password
+      const hashedPassword = await hashPassword(password);
+
+      // Create or update user
+      const user = await prisma.user.upsert({
+        where: { email },
+        update: {
+          name,
+          password: hashedPassword,
+        },
+        create: {
+          email,
+          name,
+          password: hashedPassword,
+        },
+      });
+
+      const expiresIn = 20 * 60; // 20 min
+
+      // Create JWT token
+      const jwtToken = createJWT(
+        fastify,
+        {
+          id: user.id,
+          email: user.email,
+          currentTeamId: user.currentTeamId,
+          name: user.name ?? "Unknown user",
+        },
+        expiresIn,
+      );
+
+      // Set JWT in secure cookie
+      reply.setCookie(oauth.tokenCookieName, jwtToken, {
+        httpOnly: true,
+        secure: env.isProduction,
+        sameSite: "lax",
+        maxAge: expiresIn,
+        path: "/",
+      });
+
+      reply.code(201);
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        currentTeamId: user.currentTeamId,
+      } as AuthResponse;
+    } catch (error) {
+      fastify.log.error(error);
+      reply.code(500);
+      return { error: "Failed to complete signup" };
+    }
+  });
+
+  fastify.post<{ Body: SigninRequest }>("/signin", async (request, reply) => {
+    try {
+      const { email, password } = request.body;
+
+      // Validate required fields
+      if (!email || !password) {
+        reply.code(400);
+        return { error: "Missing required fields: email, password" };
+      }
+
+      // Find user by email
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        reply.code(401);
+        return { error: "Invalid email or password" };
+      }
+
+      // Check if user has a password (email/password auth)
+      if (!user.password) {
+        reply.code(401);
+        return {
+          error:
+            "This email is linked to Google Sign-In. You can sign up with a password using the same email to enable password login, or continue with 'Sign in with Google'.",
+        };
+      }
+
+      // Verify password
+      const passwordMatch = await verifyPassword(password, user.password);
+
+      if (!passwordMatch) {
+        reply.code(401);
+        return { error: "Invalid email or password" };
+      }
+
+      const expiresIn = 20 * 60; // 20 min
+
+      // Create JWT token
+      const jwtToken = createJWT(
+        fastify,
+        {
+          id: user.id,
+          email: user.email,
+          currentTeamId: user.currentTeamId,
+          name: user.name ?? "Unknown user",
+        },
+        expiresIn,
+      );
+
+      // Set JWT in secure cookie
+      reply.setCookie(oauth.tokenCookieName, jwtToken, {
+        httpOnly: true,
+        secure: env.isProduction,
+        sameSite: "lax",
+        maxAge: expiresIn,
+        path: "/",
+      });
+
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        currentTeamId: user.currentTeamId,
+      } as AuthResponse;
+    } catch (error) {
+      fastify.log.error(error);
+      reply.code(500);
+      return { error: "Failed to complete signin" };
+    }
   });
 }
 

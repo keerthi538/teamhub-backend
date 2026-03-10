@@ -17,6 +17,8 @@ model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
   name  String?
+  password      String?   // for email/password auth
+  email_verified Boolean  @default(false)
   profileColor  String?   @default("#3b82f6")
 
   currentTeamId Int?
