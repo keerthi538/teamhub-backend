@@ -251,7 +251,9 @@ export async function authRoutes(fastify: FastifyInstance) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         reply.code(400);
-        return { error: "Invalid email format" };
+        return {
+          error: "Invalid email format",
+        };
       }
 
       // Validate password strength
