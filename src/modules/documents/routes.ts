@@ -31,7 +31,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
             teamId: true,
             published: true,
             updatedAt: true,
-            author: { select: { name: true } },
+            author: { select: { name: true, profileColor: true } },
           },
         });
 
@@ -42,6 +42,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           teamId: doc.teamId,
           author: {
             name: doc.author.name,
+            profileColor: doc.author.profileColor,
           },
           lastEdited: doc.updatedAt,
           status: doc.published ? "PUBLISHED" : "DRAFT",
