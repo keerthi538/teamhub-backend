@@ -63,6 +63,7 @@ model Document {
   yjsState  Bytes?   // Yjs collaborative state
   published Boolean @default(false)
   updatedAt DateTime @updatedAt
+  lastOpenedAt DateTime @default(now())
 
   authorId Int
   author   User @relation("UserDocuments", fields: [authorId], references: [id])
