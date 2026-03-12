@@ -204,6 +204,7 @@ export async function authRoutes(fastify: FastifyInstance) {
             email: user.email,
             currentTeamId: user.currentTeamId,
             name: userInfo?.name ?? "Unknown user",
+            lastActiveAt: user.lastActiveAt,
           },
           expiresIn,
         );
@@ -307,6 +308,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           email: user.email,
           currentTeamId: user.currentTeamId,
           name: user.name ?? "Unknown user",
+          lastActiveAt: user.lastActiveAt,
         },
         expiresIn,
       );
@@ -381,6 +383,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           email: user.email,
           currentTeamId: user.currentTeamId,
           name: user.name ?? "Unknown user",
+          lastActiveAt: user.lastActiveAt,
         },
         expiresIn,
       );

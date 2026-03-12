@@ -3,6 +3,7 @@ export interface AuthUser {
   email: string;
   name?: string;
   currentTeamId?: number | null;
+  lastActiveAt?: Date;
 }
 
 export enum TeamRole {
