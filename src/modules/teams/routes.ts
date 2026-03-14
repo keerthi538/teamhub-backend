@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { prisma } from "../../plugins/prisma";
-import { Role } from "../../../generated/prisma/enums";
+import { Role } from "../../generated/prisma/enums";
 import { env } from "../../config/env";
 import { oauth } from "../../config/oauth";
 import { isValidTeamRole } from "../../utils";
