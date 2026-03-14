@@ -213,7 +213,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         reply.setCookie(oauth.tokenCookieName, jwtToken, {
           httpOnly: true,
           secure: env.isProduction,
-          sameSite: "lax",
+          sameSite: env.isProduction ? "none" : "lax", // Use "none" for production if frontend is on a different domain
           maxAge: expiresIn,
           path: "/",
         });
@@ -317,7 +317,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       reply.setCookie(oauth.tokenCookieName, jwtToken, {
         httpOnly: true,
         secure: env.isProduction,
-        sameSite: "lax",
+        sameSite: env.isProduction ? "none" : "lax", // Use "none" for production if frontend is on a different domain
         maxAge: expiresIn,
         path: "/",
       });
@@ -392,7 +392,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       reply.setCookie(oauth.tokenCookieName, jwtToken, {
         httpOnly: true,
         secure: env.isProduction,
-        sameSite: "lax",
+        sameSite: env.isProduction ? "none" : "lax", // Use "none" for production if frontend is on a different domain
         maxAge: expiresIn,
         path: "/",
       });
