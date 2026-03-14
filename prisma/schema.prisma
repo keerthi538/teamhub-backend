@@ -17,7 +17,10 @@ model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
   name  String?
+  password      String?   // for email/password auth
+  email_verified Boolean  @default(false)
   profileColor  String?   @default("#3b82f6")
+  lastActiveAt DateTime @default(now())
 
   currentTeamId Int?
   currentTeam   Team? @relation("CurrentTeam", fields: [currentTeamId], references: [id])
@@ -61,6 +64,7 @@ model Document {
   yjsState  Bytes?   // Yjs collaborative state
   published Boolean @default(false)
   updatedAt DateTime @updatedAt
+  lastOpenedAt DateTime @default(now())
 
   authorId Int
   author   User @relation("UserDocuments", fields: [authorId], references: [id])

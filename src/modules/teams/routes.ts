@@ -162,7 +162,17 @@ export async function teamsRoutes(fastify: FastifyInstance) {
       try {
         const memberships = await prisma.membership.findMany({
           where: { teamId: currentTeamId },
-          include: { user: { select: { id: true, name: true, email: true, profileColor: true } } },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                profileColor: true,
+                lastActiveAt: true,
+              },
+            },
+          },
         });
 
         return memberships.map((membership) => ({
@@ -171,6 +181,7 @@ export async function teamsRoutes(fastify: FastifyInstance) {
           email: membership.user.email,
           role: membership.role,
           profileColor: membership.user.profileColor,
+          lastActive: membership.user.lastActiveAt,
         }));
       } catch (error) {
         fastify.log.error(error);

@@ -8,6 +8,7 @@ export interface JWTPayload {
   currentTeamId?: number | null;
   iat?: number;
   exp?: number;
+  lastActiveAt?: Date;
 }
 
 /**

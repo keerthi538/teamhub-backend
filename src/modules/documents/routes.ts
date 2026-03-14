@@ -31,7 +31,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
             teamId: true,
             published: true,
             updatedAt: true,
-            author: { select: { name: true } },
+            author: { select: { name: true, profileColor: true } },
           },
         });
 
@@ -42,6 +42,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           teamId: doc.teamId,
           author: {
             name: doc.author.name,
+            profileColor: doc.author.profileColor,
           },
           lastEdited: doc.updatedAt,
           status: doc.published ? "PUBLISHED" : "DRAFT",
@@ -50,6 +51,49 @@ export async function documentsRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         reply.code(500);
         return { error: "Failed to fetch documents" };
+      }
+    },
+  );
+
+  fastify.get<{ Reply: unknown }>(
+    "/recent",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      if (!request.user?.id) {
+        reply.code(401);
+        return { error: "Unauthorized" };
+      }
+
+      try {
+        const recentDocs = await prisma.document.findMany({
+          where: {
+            OR: [
+              { authorId: request.user.id },
+              {
+                team: {
+                  memberships: {
+                    some: { userId: request.user.id },
+                  },
+                },
+              },
+            ],
+          },
+          orderBy: { lastOpenedAt: "desc" },
+          take: 3,
+          select: {
+            uuid: true,
+            title: true,
+            author: { select: { name: true } },
+            lastOpenedAt: true,
+            teamId: true,
+          },
+        });
+
+        return recentDocs;
+      } catch (error) {
+        fastify.log.error(error);
+        reply.code(500);
+        return { error: "Failed to fetch recent documents" };
       }
     },
   );
@@ -265,6 +309,11 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           },
           { expiresIn: "2h" },
         );
+
+        const documentUpdate = await prisma.document.update({
+          where: { uuid },
+          data: { lastOpenedAt: new Date() },
+        });
 
         return {
           token,

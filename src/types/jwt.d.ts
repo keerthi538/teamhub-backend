@@ -8,6 +8,7 @@ declare module "@fastify/jwt" {
       email?: string;
       currentTeamId?: number | null;
       name?: string | null;
+      lastActiveAt?: Date;
 
       // Required for collaboration tokens
       documentUuid?: string;
@@ -20,6 +21,7 @@ declare module "@fastify/jwt" {
       email: string;
       name: string;
       currentTeamId?: number | null;
+      lastActiveAt?: Date;
     };
   }
 }
