@@ -4,6 +4,7 @@ import { Role } from "../../generated/prisma/enums";
 import { env } from "../../config/env";
 import { oauth } from "../../config/oauth";
 import { isValidTeamRole } from "../../utils";
+import { createJWT } from "../auth/jwt";
 
 export async function teamsRoutes(fastify: FastifyInstance) {
   fastify.get<{ Reply: unknown }>(
@@ -67,16 +68,25 @@ export async function teamsRoutes(fastify: FastifyInstance) {
           data: { currentTeamId: newTeam.id },
         });
 
-        const newToken = await reply.jwtSign({
-          id: request.user.id,
-          email: request.user.email,
-          currentTeamId: Number(newTeam.id),
-        });
+        const expiresIn = 20 * 60; // 20 min
+
+        const newToken = createJWT(
+          fastify,
+          {
+            id: user.id,
+            email: user.email,
+            currentTeamId: user.currentTeamId,
+            name: user.name ?? "Unknown user",
+            lastActiveAt: user.lastActiveAt,
+          },
+          expiresIn,
+        );
 
         reply.setCookie(oauth.tokenCookieName, newToken, {
           httpOnly: true,
           secure: env.isProduction,
-          sameSite: "lax",
+          sameSite: env.isProduction ? "none" : "lax",
+          maxAge: expiresIn,
           path: "/", // important
         });
 
@@ -122,16 +132,25 @@ export async function teamsRoutes(fastify: FastifyInstance) {
           },
         });
 
-        const newToken = await reply.jwtSign({
-          id: request.user.id,
-          email: request.user.email,
-          currentTeamId: Number(teamId),
-        });
+        const expiresIn = 20 * 60; // 20 min
+
+        const newToken = createJWT(
+          fastify,
+          {
+            id: user.id,
+            email: user.email,
+            currentTeamId: user.currentTeamId,
+            name: user.name ?? "Unknown user",
+            lastActiveAt: user.lastActiveAt,
+          },
+          expiresIn,
+        );
 
         reply.setCookie(oauth.tokenCookieName, newToken, {
           httpOnly: true,
           secure: env.isProduction,
-          sameSite: "lax",
+          sameSite: env.isProduction ? "none" : "lax",
+          maxAge: expiresIn,
           path: "/", // important
         });
 

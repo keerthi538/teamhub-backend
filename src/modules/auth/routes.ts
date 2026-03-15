@@ -296,6 +296,14 @@ export async function authRoutes(fastify: FastifyInstance) {
           name,
           password: hashedPassword,
         },
+        include: {
+          currentTeam: true,
+          memberships: {
+            include: {
+              team: true,
+            },
+          },
+        },
       });
 
       const expiresIn = 20 * 60; // 20 min
@@ -327,8 +335,10 @@ export async function authRoutes(fastify: FastifyInstance) {
         id: user.id,
         email: user.email,
         name: user.name,
-        currentTeamId: user.currentTeamId,
-      } as AuthResponse;
+        currentTeam: user.currentTeam,
+        profileColor: user.profileColor,
+        currentTeamRole: "",
+      };
     } catch (error) {
       fastify.log.error(error);
       reply.code(500);
@@ -349,6 +359,14 @@ export async function authRoutes(fastify: FastifyInstance) {
       // Find user by email
       const user = await prisma.user.findUnique({
         where: { email },
+        include: {
+          currentTeam: true,
+          memberships: {
+            include: {
+              team: true,
+            },
+          },
+        },
       });
 
       if (!user) {
@@ -401,8 +419,12 @@ export async function authRoutes(fastify: FastifyInstance) {
         id: user.id,
         email: user.email,
         name: user.name,
-        currentTeamId: user.currentTeamId,
-      } as AuthResponse;
+        currentTeam: user.currentTeam ?? null,
+        profileColor: user.profileColor,
+        currentTeamRole: user.currentTeam
+          ? user.memberships.find((m) => m.teamId === user.currentTeamId)?.role
+          : null,
+      };
     } catch (error) {
       fastify.log.error(error);
       reply.code(500);
