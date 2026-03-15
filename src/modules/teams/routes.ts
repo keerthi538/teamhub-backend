@@ -247,6 +247,8 @@ export async function teamsRoutes(fastify: FastifyInstance) {
           name: userToAdd.name,
           email: userToAdd.email,
           role: role,
+          profileColor: userToAdd.profileColor,
+          lastActive: userToAdd.lastActiveAt,
         };
       } catch (error) {
         fastify.log.error(error);
